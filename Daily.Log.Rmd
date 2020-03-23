@@ -1,0 +1,145 @@
+---
+title: "DailyLog"
+author: "Karen Stainbrook"
+output: 
+  word_document:
+    reference_docx: word_styles.docx
+params:
+  month: 
+    label: "Month"
+    value: 3
+    input: slider
+    min: 3
+    max: 6
+    step: 1
+    sep: ""
+  day:
+    label: "day"
+    value: 19
+    input: slider
+    min: 1
+    max: 31
+    step: 1
+    sep: ""
+    
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+library(readxl)
+library(tidyr)
+library(dplyr)
+library(tidyverse)
+
+#first generate date from input
+date<-paste("2020",params$month,params$day,sep="-")
+date<-as.Date(date)
+
+#now generate heading
+template1 <- "#Hours Logged on: %s \n "
+cat(sprintf(template1,date))
+
+#read in table types
+alene<-read_excel("C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/telecommuting_journal_V2 (002)_AMO.xls",sheet="Work Journal",col_types = c("date", "text", "numeric", "numeric","text","text","text"))
+alene<-as.data.frame(alene)
+alene<-alene %>%
+  # rename with first row
+  set_names(c("DATE","Description of Work","Estimated hrs","Actual hrs","Planned/Unplanned","Result","Comments")) %>%
+  # delete the first row
+  slice(-2) %>% 
+  filter(!is.na(DATE)) %>% 
+  mutate(employee="Alene Onion") %>% 
+  distinct() 
+
+woodfield<-read_excel("C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/telecommuting_journal_kw.xls",sheet="Completed",col_types = c("date", "text", "numeric", "numeric","text","text","text"))
+woodfield<-as.data.frame(woodfield)
+woodfield<-woodfield %>%
+  # rename with first row
+  set_names(c("DATE","Description of Work","Estimated hrs","Actual hrs","Planned/Unplanned","Result","Comments")) %>%
+  # delete the first row
+  slice(-2) %>% 
+  filter(!is.na(DATE)) %>% 
+  mutate(employee="Karen Woodfield") %>% 
+  distinct() 
+
+matt<-read_excel("C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/telecommuting_journal_MK.xlsx",sheet="Work Journal",col_types = c("date", "text", "numeric", "numeric","text","text","text"))
+matt<-as.data.frame(matt)
+matt<-matt %>%
+  # rename with first row
+  set_names(c("DATE","Description of Work","Estimated hrs","Actual hrs","Planned/Unplanned","Result","Comments")) %>%
+  # delete the first row
+  slice(-2) %>% 
+  filter(!is.na(DATE)) %>% 
+  mutate(employee="Matt Kraft") %>% 
+  distinct() 
+
+rebecca<-read_excel("C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/telecommuting_journal_RMG.xls",sheet="Completed",col_types = c("date", "text", "numeric", "numeric","text","text","text","text","text","text"))
+rebecca<-as.data.frame(rebecca)
+rebecca<-rebecca %>%
+  # rename with first row
+  set_names(c("DATE","Description of Work","Estimated hrs","Actual hrs","Planned/Unplanned","Result","Comments","junk1","junk2","junk3")) %>%
+  # delete the first row
+  slice(-2) %>% 
+  filter(!is.na(DATE)) %>% 
+  select(DATE,`Description of Work`,`Estimated hrs`,`Actual hrs`,`Planned/Unplanned`,Result,Comments) %>% 
+  mutate(employee="Rebecca Gorney") %>% 
+  distinct() 
+
+stephanie<-read_excel("C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/telecommuting_journal_sgj.xls",sheet="Work Journal",col_types = c("date", "text", "numeric", "numeric","text","text","text"))
+stephanie<-as.data.frame(stephanie)
+stephanie<-stephanie %>%
+  # rename with first row
+  set_names(c("DATE","Description of Work","Estimated hrs","Actual hrs","Planned/Unplanned","Result","Comments")) %>%
+  # delete the first row
+  slice(-2) %>% 
+  filter(!is.na(DATE)) %>% 
+  mutate(employee="Stephanie June") %>% 
+  distinct() 
+
+jesse<-read_excel("C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/JSK telecommuting_journal_V2.xlsx",sheet="Work Journal",col_types = c("date", "text", "numeric", "numeric","text","text","text"))
+jesse<-as.data.frame(jesse)
+jesse<-jesse %>%
+  # rename with first row
+  set_names(c("DATE","Description of Work","Estimated hrs","Actual hrs","Planned/Unplanned","Result","Comments")) %>%
+  # delete the first row
+  slice(-2) %>% 
+  filter(!is.na(DATE)) %>% 
+  mutate(employee="Jesse Keltz") %>% 
+  distinct() 
+
+karen<-read_excel("C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/telecommuting_journal_V2 (002)_kms.xls",sheet="Work Journal",col_types = c("date", "text", "numeric", "numeric","text","text","text"))
+karen<-as.data.frame(karen)
+karen<-karen %>%
+  # rename with first row
+  set_names(c("DATE","Description of Work","Estimated hrs","Actual hrs","Planned/Unplanned","Result","Comments")) %>%
+  # delete the first row
+  slice(-2) %>% 
+  filter(!is.na(DATE)) %>% 
+  mutate(employee="Karen Stainbrook") %>% 
+  distinct() 
+
+#merge together:
+FlagMerge<-function(x, y){
+  df<- merge(x, y, all= TRUE)
+  return(df)
+}
+hrs<- Reduce(FlagMerge, list(alene, woodfield,jesse, karen, matt,rebecca,stephanie))
+hrs<-hrs %>% 
+  select(DATE,employee,`Description of Work`,`Estimated hrs`,`Actual hrs`,`Planned/Unplanned`,Result,Comments) %>% 
+  arrange(DATE,employee) %>% 
+  distinct()
+rm(list=c('alene','woodfield','jesse','karen','matt','stephanie','rebecca','FlagMerge'))
+
+library(dplyr)
+#restrict it to only those logged yesterday
+hrs<-hrs %>% 
+  mutate(DATE=as.Date(DATE)) %>% 
+  filter(DATE==date) %>% 
+  distinct()
+hrs$DATE<-NULL
+
+knitr::kable(hrs)
+```

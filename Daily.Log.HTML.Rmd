@@ -1,47 +1,26 @@
 ---
-title: "DailyLog"
-author: "Karen Stainbrook"
-output: 
-  word_document:
-    reference_docx: word_styles.docx
-params:
-  month: 
-    label: "Month"
-    value: 3
-    input: slider
-    min: 3
-    max: 6
-    step: 1
-    sep: ""
-  day:
-    label: "day"
-    value: 19
-    input: slider
-    min: 1
-    max: 31
-    step: 1
-    sep: ""
-    
+title: "Daily.Log"
+author: "LMAS"
+date: "`r format(Sys.Date(),format='%B %d, %Y')`"
+output:  
+  html_document
 ---
 
 ```{r setup, include=FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
+# {.tabset}
+A compilation of hours spent on each LMAS project since the start of the quarantine.
 
+##Tabulated Data {.tabset}
 ```{r, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
 library(readxl)
 library(tidyr)
 library(dplyr)
 library(tidyverse)
 library(lubridate)
-
-#first generate date from input
-date<-paste("2020",params$month,params$day,sep="-")
-date<-as.Date(date)
-
-#now generate heading
-template1 <- "#Hours Logged on: %s \n "
-cat(sprintf(template1,date))
+library(knitr)
+library(DT)
 
 #read in table types
 alene<-read_excel("C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/telecommuting_journal_V2 (002)_AMO.xls",sheet="Work Journal",col_types = c("date", "text","text", "numeric", "numeric","text","text","text"))
@@ -109,7 +88,7 @@ stephanie<-stephanie %>%
   mutate(employee="Stephanie June") %>% 
   mutate(week=((yday(DATE)-5)/7),
          week=as.integer(week)) %>% 
-  distinct()
+  distinct() 
 
 jesse<-read_excel("C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/JSK telecommuting_journal_V2.xlsx",sheet="Completed",col_types = c("date", "text", "numeric", "numeric","text","text","text","text"))
 jesse<-as.data.frame(jesse)
@@ -132,18 +111,64 @@ FlagMerge<-function(x, y){
 }
 hrs<- Reduce(FlagMerge, list(alene, woodfield,jesse, matt,rebecca,stephanie))
 hrs<-hrs %>% 
-  select(DATE,employee,Project,`Description of Work`,`Estimated hrs`,`Actual hrs`,`Planned/Unplanned`,Result,Comments) %>% 
+  select(week,DATE,employee,Project,`Description of Work`,`Estimated hrs`,`Actual hrs`,`Planned/Unplanned`,Result,Comments) %>% 
+  mutate(DATE=as.Date(DATE)) %>% 
   arrange(DATE,employee) %>% 
   distinct()
 rm(list=c('alene','woodfield','jesse','karen','matt','stephanie','rebecca','FlagMerge'))
 
-library(dplyr)
-#restrict it to only those logged yesterday
-hrs<-hrs %>% 
-  mutate(DATE=as.Date(DATE)) %>% 
-  filter(DATE==date) %>% 
-  distinct()
-hrs$DATE<-NULL
+datatable(hrs, extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('copy', 'csv', 'excel', 'pdf', 'print')))
+```
 
-knitr::kable(hrs)
+##Combined Plot {.tabset}
+Plot of all the hours spent by LMAS staff on individual projects
+```{r, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+combined<-hrs %>% 
+  mutate(Project=toupper(Project),
+         week=as.character(week)) %>% 
+  rename(hours=`Actual hrs`) %>% 
+  mutate(hours=ifelse(is.na(hours),0,hours)) %>% 
+  select(week,Project,hours) %>% 
+  group_by(week,Project) %>% 
+  summarise(hours=sum(hours)) %>% 
+  ungroup()
+
+print(ggplot(data=combined, aes(x=Project, y=hours, fill=week)) +
+  geom_bar(stat="identity", color="black", position=position_dodge())+
+  theme_minimal()+
+  scale_fill_brewer(palette="Set2") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  coord_flip())
+```
+
+##Individual Plots {.tabset}
+Plot of all the hours spent by specified LMAS staff on individual projects
+```{r, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+hrs<-hrs %>% 
+  arrange(employee)
+params<-unique(hrs$employee)
+nparams<-length(params)
+
+for(j in 1:nparams){
+  display<-paste("  \n \n","###",params[j],"  \n",sep="")
+      cat(display)
+      rm(display)
+employee<-hrs %>% 
+  filter(employee==params[j]) %>% 
+  mutate(Project=toupper(Project),
+         week=as.character(week)) %>% 
+  rename(hours=`Actual hrs`) %>% 
+  mutate(hours=ifelse(is.na(hours),0,hours)) %>% 
+  select(week,Project,hours) %>% 
+  group_by(week,Project) %>% 
+  summarise(hours=sum(hours)) %>% 
+  ungroup()
+
+print(ggplot(data=employee, aes(x=Project, y=hours, fill=week)) +
+  geom_bar(stat="identity", color="black", position=position_dodge())+
+  theme_minimal()+
+  scale_fill_brewer(palette="Set2") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  coord_flip())
+}
 ```

@@ -14,7 +14,7 @@ junk<-combined %>%
   filter(Project=="GENERAL/SECTION")
 junk
 
-
+library(rmarkdown)
 rmarkdown::render('Daily.Log.HTML.Rmd',  
                   output_file =  paste("Daily.Log.HTML.", format((Sys.Date()-1),format='%Y-%m-%d'), ".html", sep=''), 
                   output_dir = 'C:/Users/amonion.000/New York State Office of Information Technology Services/LMAS - General/Daily.Logs')

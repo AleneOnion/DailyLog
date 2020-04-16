@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = FALSE)
 # {.tabset}
 A compilation of hours spent on each LMAS project since the start of the quarantine.
 
-##Tabulated Data {.tabset}
+##Tabulated Data {.tabset .tabset-fade}
 ```{r, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
 library(readxl)
 library(tidyr)
